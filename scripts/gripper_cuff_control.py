@@ -63,17 +63,17 @@ class GripperConnect(object):
         self._gripper = Gripper('%s' % (arm,))
         self._nav = Navigator('%s' % (arm,))
 
-        # connect callback fns to signals
         if self._gripper.type() != 'custom':
             self._gripper.calibrate()
-            self._open_io.state_changed.connect(self._open_action)
-            self._close_io.state_changed.connect(self._close_action)
         else:
             msg = (("%s (%s) not capable of gripper commands."
                    " Running cuff-light connection only.") %
                    (self._gripper.name.capitalize(), self._gripper.type()))
             rospy.logwarn(msg)
 
+        # connect callback fns to signals
+        self._open_io.state_changed.connect(self._open_action)
+        self._close_io.state_changed.connect(self._close_action)
         if lights:
             self._light_io.state_changed.connect(self._light_action)
 
@@ -81,22 +81,32 @@ class GripperConnect(object):
                       self._gripper.name.capitalize())
 
     def _open_action(self, value):
-        if value:
+        if value and self._grippable():
             rospy.logdebug("gripper open triggered")
             self._gripper.open()
 
     def _close_action(self, value):
-        if value:
+        if value and self._grippable():
             rospy.logdebug("gripper close triggered")
             self._gripper.close()
 
     def _light_action(self, value):
-        if value:
-            rospy.logdebug("cuff grasp triggered")
+        if value and self._grippable():
+            rospy.logdebug("cuff squeeze triggered")
         else:
             rospy.logdebug("cuff release triggered")
         self._nav.inner_led = value
         self._nav.outer_led = value
+
+    def _grippable(self):
+        if self._gripper.calibrated():
+            return True
+        elif self._gripper.type() == 'electric':
+            rospy.loginfo("GripperCuffEx: calibrating %s...",
+                          self._gripper.name.capitalize())
+            return (self._gripper.calibrate() == True)
+        else:
+            return False
 
 
 def main():
