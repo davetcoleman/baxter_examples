@@ -42,5 +42,6 @@
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>baxter_core_msgs</run_depend>
   <run_depend>baxter_interface</run_depend>
+  <run_depend>image_view</run_depend>
 
 </package>
